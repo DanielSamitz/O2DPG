@@ -43,9 +43,15 @@ public:
     }
   }
 
-  void forceDecays(std::vector<TParticle> &mParticles, int mother_pos) {
-    TParticle *p = &mParticles[mother_pos];
-    int pdg = p->GetPdgCode();
+  void forceDecays(TParticle* p, int pdg, int mother_pos, std::vector<TParticle> &mParticles, int &mParticles_size) {
+    //TParticle *p = &mParticles[mother_pos];
+    //int pdg = p->GetPdgCode();
+    double decay_weight = mWeights[abs(pdg)];
+    if (decay_weight == 0) {
+      LOG(error) << "Decaying particle (PDG = " << pdg
+                  << ") with decay weight = 0. Did you set the pdg codes for "
+                    "calculating weights correctly?";
+    }
     TLorentzVector mom = TLorentzVector(p->Px(), p->Py(), p->Pz(), p->Energy());
     Decay(pdg, &mom);
     TClonesArray daughters = TClonesArray("TParticle");
@@ -55,18 +61,12 @@ public:
     p->SetBit(ParticleStatus::kToBeDone, false);
     double mother_weight = p->GetWeight();
     TParticle *mother = static_cast<TParticle *>(daughters[0]);
-    int mParticles_size = mParticles.size();
+    //int mParticles_size = mParticles.size();
     p->SetFirstDaughter(mother->GetFirstDaughter() + mParticles_size - 1);
     p->SetLastDaughter(mother->GetLastDaughter() + mParticles_size - 1);
     for (int j = 1; j < nParticles;
          j++) { // start loop at 1 to not include mother
       TParticle *d = static_cast<TParticle *>(daughters[j]);
-      double decay_weight = mWeights[abs(pdg)];
-      if (decay_weight == 0) {
-        LOG(error) << "Decaying particle (PDG = " << pdg
-                   << ") with decay weight = 0. Did you set the pdg codes for "
-                      "calculating weights correctly?";
-      }
       d->SetWeight(decay_weight * mother_weight);
       if (d->GetStatusCode() == 1) {
         d->SetStatusCode(
@@ -99,6 +99,7 @@ public:
       }
       mParticles.push_back(*d);
     }
+    mParticles_size = mParticles_size + nParticles - 1;
   }
 
 private:
@@ -154,11 +155,12 @@ protected:
   bool makeForcedDecays() {
     int mParticles_size = mParticles.size();
     for (int i = 0; i < mParticles_size; i++) {
-      int pdg = mParticles[i].GetPdgCode();
+      TParticle *p = &mParticles[i];
+      int pdg = p->GetPdgCode();
       if (std::find(mPdgCodes.begin(), mPdgCodes.end(), abs(pdg)) !=
           mPdgCodes.end()) {
-        mDecayer->forceDecays(mParticles, i);
-        mParticles_size = mParticles.size();
+        mDecayer->forceDecays(p, pdg, i, mParticles, mParticles_size);
+        //mParticles_size = mParticles.size();
       }
     }
     return true;
