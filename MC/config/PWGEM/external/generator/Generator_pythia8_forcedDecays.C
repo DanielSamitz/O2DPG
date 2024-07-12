@@ -44,8 +44,6 @@ public:
   }
 
   void forceDecays(TParticle* p, int pdg, int mother_pos, std::vector<TParticle> &mParticles, int &mParticles_size) {
-    //TParticle *p = &mParticles[mother_pos];
-    //int pdg = p->GetPdgCode();
     double decay_weight = mWeights[abs(pdg)];
     if (decay_weight == 0) {
       LOG(error) << "Decaying particle (PDG = " << pdg
@@ -61,7 +59,6 @@ public:
     p->SetBit(ParticleStatus::kToBeDone, false);
     double mother_weight = p->GetWeight();
     TParticle *mother = static_cast<TParticle *>(daughters[0]);
-    //int mParticles_size = mParticles.size();
     p->SetFirstDaughter(mother->GetFirstDaughter() + mParticles_size - 1);
     p->SetLastDaughter(mother->GetLastDaughter() + mParticles_size - 1);
     for (int j = 1; j < nParticles;
@@ -160,7 +157,6 @@ protected:
       if (std::find(mPdgCodes.begin(), mPdgCodes.end(), abs(pdg)) !=
           mPdgCodes.end()) {
         mDecayer->forceDecays(p, pdg, i, mParticles, mParticles_size);
-        //mParticles_size = mParticles.size();
       }
     }
     return true;
